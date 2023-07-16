@@ -1,0 +1,171 @@
+---
+title: "SCONE analisys"
+output:
+    html_document:
+    df_print: paged
+theme: sandstone
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(here)
+library(viridis)
+theme_set(theme_bw())
+
+knitr::opts_chunk$set(tidy = FALSE,
+                      fig.width = 6,
+                      fig.height = 5)
+```
+
+## Examining latency
+
+```{r}
+library(tidyverse)
+
+df <- read_csv("C:/Users/amand/OneDrive/Documentos/network_measurer.log")
+
+# Mapear os valores da coluna 'TYPE' para os grupos desejados
+type_mapping <- c('NAT-UPLOAD-LARGE' = 'NATIVE',
+                  'NAT-UPLOAD-SMALL' = 'NATIVE',
+                  'CONF-UPLOAD-LARGE' = 'SCONE',
+                  'CONF-UPLOAD-SMALL' = 'SCONE')
+
+# Adicionar a coluna GROUP ao DataFrame
+df <- df %>%
+  mutate(GROUP = type_mapping[TYPE])
+
+# Filtrar os tipos que não contêm 'DOWNLOAD'
+df <- df %>%
+  filter(grepl("^CONF-UPLOAD|^NAT-UPLOAD", TYPE))
+
+# Remover os prefixos "CONF-" ou "NAT-" dos rótulos dos tipos
+df <- df %>%
+  mutate(TYPE_LABEL = gsub('^CONF-|^NAT-', '', TYPE))
+
+# Definir as cores para cada grupo
+colors <- c('NATIVE' = 'purple',
+            'SCONE' = '#E69F00')
+
+# Criar boxplots comparativos para cada TYPE
+ggplot(df, aes(x = TYPE_LABEL, y = LATENCY, fill = GROUP)) +
+  geom_boxplot() +
+  scale_fill_manual(values = colors, labels = c('NATIVE', 'SCONE')) +
+  xlab('TYPE') +
+  ylab('LATENCY') +
+  ggtitle('Latency by type') +
+  theme(legend.position = 'bottom') +
+  coord_cartesian(ylim = c(0.07, 0.50))
+
+
+```
+
+
+## Throughput analysis
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+df = read_csv(
+    here::here("C:/Users/amand/OneDrive/Documentos/network_measurer.log"),
+    )
+# Mapear os valores da coluna 'TYPE' para os grupos desejados
+type_mapping <- c('NAT-DOWNLOAD-LARGE' = 'NATIVE',
+                  'NAT-DOWNLOAD-SMALL' = 'NATIVE',
+                  'CONF-DOWNLOAD-LARGE' = 'SCONE',
+                  'CONF-DOWNLOAD-SMALL' = 'SCONE')
+
+# Filtrar os tipos que não contêm 'DOWNLOAD'
+df <- df %>%
+  filter(grepl("^CONF-DOWNLOAD|^NAT-DOWNLOAD", TYPE))
+
+# Adicionar a coluna GROUP ao DataFrame
+df$GROUP <- type_mapping[df$TYPE]
+
+# Remover os prefixos "CONF-" ou "NAT-" dos rótulos dos tipos
+# Remover os prefixos "CONF-" ou "NAT-" dos rótulos dos tipos
+df <- df %>%
+  mutate(TYPE_LABEL = gsub('^CONF-|^NAT-', '', TYPE))
+
+# Definir as cores para cada grupo
+colors <- c('NATIVE' = 'purple',
+            'SCONE' = '#E69F00')
+
+# Converter THROUGHPUT_SPEED para MB/s
+df$THROUGHPUT_SPEED <- df$THROUGHPUT_SPEED / 1e6
+
+latency_stats <- df %>%
+  group_by(GROUP) %>%
+  summarize(
+    mean_latency = mean(LATENCY, na.rm = TRUE),
+    median_latency = median(LATENCY, na.rm = TRUE),
+    min_latency = min(LATENCY, na.rm = TRUE),
+    max_latency = max(LATENCY, na.rm = TRUE)
+  )
+
+print(latency_stats)
+
+throughput_stats <- df %>%
+  group_by(GROUP) %>%
+  summarize(
+    mean_throughput = mean(THROUGHPUT_SPEED, na.rm = TRUE),
+    median_throughput = median(THROUGHPUT_SPEED, na.rm = TRUE),
+    min_throughput = min(THROUGHPUT_SPEED, na.rm = TRUE),
+    max_throughput = max(THROUGHPUT_SPEED, na.rm = TRUE)
+  )
+
+print(throughput_stats)
+
+# Criar boxplots comparativos para cada TYPE
+ggplot(df, aes(x = TYPE_LABEL, y = THROUGHPUT_SPEED, fill = GROUP)) +
+  geom_boxplot() +
+  scale_fill_manual(values = colors, labels = c('NATIVE', 'SCONE')) +
+  xlab('TYPE') +
+  ylab('Throughput (MB/s)') +
+  ggtitle('THROUGHPUT SPEED by type') +
+  theme(legend.position = 'bottom')
+```
+
+## CPU usage comparison on DOWNLOAD
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+df = read_csv(
+    here::here("C:/Users/amand/OneDrive/Documentos/participant_measurer.log"),
+    )
+
+# Mapear os valores da coluna 'TYPE' para os grupos desejados
+type_mapping <- c('NAT-DOWNLOAD-LARGE' = 'NATIVE',
+                  'NAT-DOWNLOAD-SMALL' = 'NATIVE',
+                  'CONF-DOWNLOAD-LARGE' = 'SCONE',
+                  'CONF-DOWNLOAD-SMALL' = 'SCONE')
+
+# Filtrar os tipos que não contêm 'DOWNLOAD'
+df <- df %>%
+  filter(grepl("^CONF-DOWNLOAD|^NAT-DOWNLOAD", TYPE))
+
+# Adicionar a coluna GROUP ao DataFrame
+df$GROUP <- type_mapping[df$TYPE]
+
+# Remover os prefixos "CONF-" ou "NAT-" dos rótulos dos tipos
+# Remover os prefixos "CONF-" ou "NAT-" dos rótulos dos tipos
+df <- df %>%
+  mutate(TYPE_LABEL = gsub('^CONF-|^NAT-', '', TYPE))
+
+# Definir as cores para cada grupo
+colors <- c('NATIVE' = 'purple',
+            'SCONE' = '#E69F00')
+
+# Criar boxplots comparativos para cada TYPE
+ggplot(df, aes(x = TYPE_LABEL, y =  CPU_PS_AUX, fill = GROUP)) +
+  geom_boxplot() +
+  scale_fill_manual(values = colors, labels = c('NATIVE', 'SCONE')) +
+  xlab('TYPE') +
+  ylab(' CPU %') +
+  ggtitle('CPU by type') +
+  theme(legend.position = 'bottom')
+
+```

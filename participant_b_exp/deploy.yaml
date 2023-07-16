@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-app
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: participant_b
+  namespace: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: participant_b
+  template:
+    metadata:
+      labels:
+        app: participant_b
+    spec:
+      containers:
+        - name: participant_b
+          image: amand1o/server-login:native # Replace with your actual server image
+          ports:
+            - containerPort: 50051
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: REDIS_HOST
+              value: redis-service.my-app.svc.cluster.local
+            - name: REDIS_PORT
+              value: "6379"
+        - name: measurer
+          image: registry-git.lsd.ufcg.edu.br/amandio/iara:measurer
+          args:
+            [
+              "/etc/envoy/envoy.yaml",
+              "envoy",
+              "$EXP_FINAL",
+            ]
+          imagePullPolicy: Always
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - SYS_PTRACE
+          stdin: true
+          tty: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: participant_b
+  namespace: my-app
+spec:
+  selector:
+    app: server
+  ports:
+    - protocol: TCP
+      port: 50051
+      targetPort: 50051
