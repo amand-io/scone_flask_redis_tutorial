@@ -25,8 +25,8 @@ spec:
           image: registry-git.lsd.ufcg.edu.br/amandio/iara:measurer
           args:
             [
-              "/etc/envoy/envoy.yaml",
-              "envoy",
+              "app.py",
+              "client",
               "$EXP_FINAL",
             ]
           imagePullPolicy: Always
